@@ -2,6 +2,7 @@
 # finite-body-like solar system object, according to Fukushima, Toshio (2017):
 # Precise and fast computation of gravitational field of general finite body and
 # its application to gravitational study of asteroid Eros. Astron J 154:145
+# (https://doi.org/10.3847/1538-3881/aa88b8)
 
 using DoubleExponentialFormulas
 import Unitful: @u_str, ustrip
