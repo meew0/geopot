@@ -102,6 +102,19 @@ function low_degree_D(n, B, α, ζ)
     end
 end
 
+# Equation (62): recurrence relation for the computation of higher order
+# integrals
+function recursive_L(j, t, L, S, A)
+    if j == 0
+        return L
+    elseif j == 1
+        return S
+    end
+
+    jL_j = t^(j - 1) * S - (j - 1) * A * recursive_L(j - 2, t, L, S, A)
+    jL_j / j
+end
+
 # Equation (14): the indefinite radial line integral, expressed analytically
 function I_n(n, layer::FiniteBodyLayer, evp::EvaluationPoint, r, ϕ, λ)
     # Calculate non-dimensional quantities from equation (11)
@@ -127,7 +140,7 @@ function I_n(n, layer::FiniteBodyLayer, evp::EvaluationPoint, r, ϕ, λ)
         L = log(A / (S - B - ζ))
     end
 
-    if n <= 3
+    if false#n <= 3
         # Calculate the coefficient polynomials using low-degree closed form
         # expressions
         C = low_degree_C(n, B, α)
@@ -136,11 +149,12 @@ function I_n(n, layer::FiniteBodyLayer, evp::EvaluationPoint, r, ϕ, λ)
         # Bring everything together
         C * L + D * S
     else
-        # TODO: For higher polynomial degrees, the value of the integral must be
-        # computed using the general method given in Appendix A.2, equations
-        # (58) to (62)
-        error(
-            "Computation of the radial integral I for polynomial degrees greater than 3 is not yet implemented",
+        # Use the compact expression of the radial integral in terms of the
+        # recurrence relation for L instead (equation (58))
+        sum(
+            binomial(n + 2, j) *
+            (α - B)^(n + 2 - j) *
+            recursive_L(j, ζ + B, L, S, A) for j = 0:(n+2)
         )
     end
 end
