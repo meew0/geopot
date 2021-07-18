@@ -9,7 +9,7 @@ import Unitful: @u_str, ustrip
 
 # Define some shorthands for dimensions we need
 Length = typeof(1.0u"m")
-Angle = Real # for now
+Angle = Float64 # for now
 GravitationalPotential = typeof(1.0u"m^2/s^2")
 
 # Layer within a general finite body, with its top and bottom surfaces modelled
@@ -23,7 +23,7 @@ struct FiniteBodyLayer
     G::typeof(1.0u"kg^-1 * m^3 * s^-2")
 
     # Degree of the density polynomial
-    N::Integer
+    N::Int64
 
     # Function ρ(n, ϕ, λ) returning the n-th degree coefficient of the density
     # polynomial at the given spherical coordinate
@@ -49,7 +49,7 @@ end
 
 # Closed-form expressions for the value of the first coefficient function C at
 # degrees n <= 3 (equations 16, 18, 20, 22)
-function low_degree_C(n, B, α)
+function low_degree_C(n::Int64, B::Float64, α::Float64)::Float64
     if n == 0
         α^2 - 3α * B + (3 / 2) * B^2
     elseif n == 1
@@ -71,7 +71,7 @@ end
 
 # Closed-form expressions for the value of the second coefficient function D at
 # degrees n <= 3 (equations 17, 19, 21, 23)
-function low_degree_D(n, B, α, ζ)
+function low_degree_D(n::Int64, B::Float64, α::Float64, ζ::Float64)::Float64
     if n == 0
         (2α - (3 / 2) * B) + ζ * (1 / 2)
     elseif n == 1
@@ -103,22 +103,22 @@ function low_degree_D(n, B, α, ζ)
 end
 
 # Equation (62): recurrence relation for the computation of higher order
-# integrals
-function recursive_L(j::Integer, t::Real, L::Real, S::Real, A::Real)::Real
-    if j == 0
-        return L
-    elseif j == 1
-        return S
-    elseif j < 0
-        error("j must be positive")
+# integrals, implemented iteratively to avoid problems with the Julia compiler.
+function iterative_L(j::Int64, t::Float64, L::Float64, S::Float64, A::Float64)::Float64
+    # Find the root value of L at which the recurrence relation would terminate
+    j_root = j % 2
+    L_j = S * j_root + L * (1 - j_root) # L if j_root == 0, S if 1. Avoids branching
+
+    for j in j_root:2:j
+        jL_j = t^(j - 1) * S - (j - 1) * A * L_j
+        L_j = jL_j / j
     end
 
-    jL_j = t^(j - 1) * S - (j - 1) * A * recursive_L(j - 2, t, L, S, A)
-    jL_j / j
+    L_j
 end
 
 # Equation (14): the indefinite radial line integral, expressed analytically
-function I_n(n, layer::FiniteBodyLayer, evp::EvaluationPoint, r, ϕ, λ)
+function I_n(n::Int64, layer::FiniteBodyLayer, evp::EvaluationPoint, r::Length, ϕ::Angle, λ::Angle)::Float64
     # Calculate non-dimensional quantities from equation (11)
     α = evp.R / layer.R_0
     ξ = ϕ - evp.Φ
@@ -156,14 +156,14 @@ function I_n(n, layer::FiniteBodyLayer, evp::EvaluationPoint, r, ϕ, λ)
         sum(
             binomial(n + 2, j) *
             (α - B)^(n + 2 - j) *
-            recursive_L(j, ζ + B, L, S, A) for j = 0:(n+2)
+            iterative_L(j, ζ + B, L, S, A) for j = 0:(n+2)
         )
     end
 end
 
 # Equation (13): Kernel function of degree n, calculated as a difference between
 # two line integrals
-function K_n(n, layer::FiniteBodyLayer, evp::EvaluationPoint, ϕ, λ)
+function K_n(n::Int64, layer::FiniteBodyLayer, evp::EvaluationPoint, ϕ::Angle, λ::Angle)::Float64
     top_radius = layer.R_T(ϕ, λ)
     top_term = I_n(n, layer, evp, top_radius, ϕ, λ)
 
@@ -175,11 +175,11 @@ end
 
 # Equation (30): the radial term that will be doubly integrated.
 function Q_n(
-    n,
+    n::Int64,
     layer::FiniteBodyLayer,
     evp::EvaluationPoint,
-    ξ,
-    η,
+    ξ::Angle,
+    η::Angle,
 )::GravitationalPotential
     ϕ = evp.Φ + ξ
     λ = evp.Λ + η
@@ -192,7 +192,7 @@ function Q_n(
 end
 
 # Equation (29): Single integration of the radial term along one latitude line.
-function P_n(n, layer::FiniteBodyLayer, evp::EvaluationPoint, δ, ξ)
+function P_n(n::Int64, layer::FiniteBodyLayer, evp::EvaluationPoint, δ::Float64, ξ::Angle)::GravitationalPotential
     f(η) = ustrip(u"m^2/s^2", Q_n(n, layer, evp, ξ, η))
     I, E = quadde(f, 0, 2π, rtol = δ)
     I * u"m^2/s^2"
@@ -200,7 +200,7 @@ end
 
 # Equation (28): Split quadrature integration of terms corresponding to a single
 # degree of the density polynomial over the entire surface of the sphere.
-function V_n(n, layer::FiniteBodyLayer, evp::EvaluationPoint, δ)
+function V_n(n::Int64, layer::FiniteBodyLayer, evp::EvaluationPoint, δ::Float64)::GravitationalPotential
     # The cos(ϕ) term is NOT present in the final rewritten expression for V in
     # equation (28). It is however present in the non-rewritten expressions in
     # equations (7) and (12), and without it the result is completely wrong,
@@ -221,7 +221,7 @@ end
 # at a given evaluation point, computed as a finite series of terms
 # corresponding to individual degree terms of the polynomial approximation of
 # the layer's mass density.
-function V(layer::FiniteBodyLayer, evp::EvaluationPoint, δ)
+function V(layer::FiniteBodyLayer, evp::EvaluationPoint, δ::Float64)::GravitationalPotential
     sum(V_n(n, layer, evp, δ) for n = 0:layer.N)
 end
 
