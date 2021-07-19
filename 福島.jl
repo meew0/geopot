@@ -237,15 +237,17 @@ end
 # corresponding to individual degree terms of the polynomial approximation of
 # the layer's mass density.
 function V(layer::FiniteBodyLayer, evp::EvaluationPoint, δ)
-    # Create an empty array of length N
+    # Create an empty array to hold all the polynomial degrees
     result = Vector{GravitationalPotential}(undef, layer.N + 1)
 
-    # Compute all the polynomial degrees in a parallel way, to reduce
-    # computation time on multicore systems
+    # Compute the degrees in a parallel way, to reduce computation time on
+    # multicore systems
     Threads.@threads for n = 0:layer.N
-        result[n + 1] = V_n(n, layer, evp, δ)
+        result[n+1] = V_n(n, layer, evp, δ)
     end
 
+    # The total potential of the layer at the evaluation point is equal to the
+    # sum of the terms corresponding to individual polynomial degrees
     sum(result)
 end
 
@@ -264,10 +266,15 @@ function 福島2017_spherical_layer_potential_analytic(
     H = R_T - R_B
 
     if evp.R < R_B
+        # Inside the layer: the potential is equal at all points (see also the
+        # shell theorem)
         2π * layer.G * ρ * (R_T + R_B) * H
     elseif evp.R < R_T
+        # Within the layer
         (2π * layer.G * ρ / 3) * (3R_T^2 - evp.R^2 - 2R_B^3 / evp.R)
     else
+        # Outside the layer: first calculate its mass, then the potential based
+        # on the distance from the mass
         M = (4π / 3) * ρ * (R_T^2 + R_T * R_B + R_B^2) * H
         layer.G * M / evp.R
     end
