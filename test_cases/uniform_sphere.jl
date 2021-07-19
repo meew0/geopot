@@ -1,5 +1,6 @@
 # Compare the numerical to the analytical solution
 include("../福島.jl")
+include("../layer.jl")
 
 import PhysicalConstants.CODATA2018: G
 import Unitful: @u_str, uconvert
@@ -49,3 +50,15 @@ compare_analytical_numerical(layer, EvaluationPoint(3000.0u"km", 0, 0), δ)
 
 println("8000 km")
 compare_analytical_numerical(layer, EvaluationPoint(8000.0u"km", 0, 0), δ)
+
+println("Mass")
+@time println("Numerical: ", uconvert(u"kg", layer_mass(layer)))
+H = R_T - R_B
+analytical_mass = (4π / 3) * ρ * (R_T^2 + R_T * R_B + R_B^2) * H
+println("Analytical: ", uconvert(u"kg", analytical_mass))
+
+println("Volume")
+@time println("Numerical: ", uconvert(u"m^3", layer_volume(layer)))
+outer_volume = (4 / 3) * π * R_T^3
+inner_volume = (4 / 3) * π * R_B^3
+println("Analytical: ", uconvert(u"m^3", outer_volume - inner_volume))
