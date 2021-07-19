@@ -4,7 +4,7 @@
 # its application to gravitational study of asteroid Eros. Astron J 154:145
 # (https://doi.org/10.3847/1538-3881/aa88b8)
 
-using DoubleExponentialFormulas
+using HCubature
 import Unitful: @u_str, ustrip
 
 # Define some shorthands for dimensions we need
@@ -175,27 +175,38 @@ function Q_n(
     constant_term * density_term * kernel_term
 end
 
-# Equation (29): Single integration of the radial term along one latitude line.
-function P_n(n, layer::FiniteBodyLayer, evp::EvaluationPoint, δ, ξ)
-    f(η) = ustrip(u"m^2/s^2", Q_n(n, layer, evp, ξ, η))
-    I, E = quadde(f, 0, 2π, rtol = δ)
-    I * u"m^2/s^2"
-end
-
 # Equation (28): Split quadrature integration of terms corresponding to a single
 # degree of the density polynomial over the entire surface of the sphere.
-function V_n(n, layer::FiniteBodyLayer, evp::EvaluationPoint, δ)
-    # The cos(ϕ) term is NOT present in the final rewritten expression for V in
-    # equation (28). It is however present in the non-rewritten expressions in
-    # equations (7) and (12), and without it the result is completely wrong,
-    # so I assume this term was just forgotten in the final expression.
-    f(ξ) = ustrip(u"m^2/s^2", P_n(n, layer, evp, δ, ξ) * cos(evp.Φ + ξ))
+# Unlike in the paper, the integration is realised as a single two-dimensional
+# integration step rather than nested one-dimensional integration, using
+# h-adaptive multidimensional integration.
+function V_n(
+    n,
+    layer::FiniteBodyLayer,
+    evp::EvaluationPoint,
+    δ,
+)::GravitationalPotential
+    function integrand(x)
+        ξ, η = x # Destructure vector
+
+        # The cos(ϕ) term is NOT present in the final rewritten expression for V
+        # in equation (28). It is however present in the non-rewritten
+        # expressions in equations (7) and (12), and without it the result is
+        # completely wrong, so I assume this term was just forgotten in the
+        # final expression.
+        result = Q_n(n, layer, evp, ξ, η) * cos(evp.Φ + ξ)
+
+        # Strip units so hcubature can deal with the value
+        ustrip(u"m^2/s^2", result)
+    end
 
     # Split quadrature integration: the rewritten term contains a singularity
-    # at ϕ = Φ (⇔ ξ = 0). The DE integration method can tolerate this but only
+    # at ϕ = Φ (⇔ ξ = 0). The integration method can tolerate this but only
     # at the boundary of the integration interval. So the integration must be
     # performed separately for the latitudes above and below Φ.
-    I, E = quadde(f, -π / 2 - evp.Φ, 0, π / 2 - evp.Φ, rtol = δ)
+    upper, E = hcubature(integrand, (-π / 2 - evp.Φ, 0), (0, 2π), rtol = δ)
+    lower, E = hcubature(integrand, (0, 0), (π / 2 - evp.Φ, 2π), rtol = δ)
+    I = upper + lower
 
     # Add the unit that was lost in integration
     I * u"m^2/s^2"
