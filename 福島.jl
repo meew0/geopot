@@ -93,7 +93,11 @@ function low_degree_D(n, B, α, ζ)
             (21 / 8) * B^3
         ) +
         ζ^2 * ((10 / 3) * α^2 - (69 / 20) * α * B + (21 / 20) * B^2) +
-        ζ^3 * ((5 / 4) * α - (9 / 20) * B) # In the paper, (9/20) * B^2 is used here instead of (9/20) * B, which I assume is an error.
+
+        # The paper uses (9/20) * B^2 here instead of (9/20) * B. I assume this
+        # is an error, both because it does not fit into the pattern and because
+        # it leads to the wrong result as compared to the recurrence relation.
+        ζ^3 * ((5 / 4) * α - (9 / 20) * B) +
         ζ^4 * (1 / 5)
     else
         error(
@@ -104,7 +108,7 @@ end
 
 # Equation (62): recurrence relation for the computation of higher order
 # integrals
-function recursive_L(j::Integer, t::Real, L::Real, S::Real, A::Real)::Real
+function recursive_L(j, t, L, S, A)
     if j == 0
         return L
     elseif j == 1
@@ -142,7 +146,7 @@ function I_n(n, layer::FiniteBodyLayer, evp::EvaluationPoint, r, ϕ, λ)
         L = log(A / (S - B - ζ))
     end
 
-    if false#n <= 3
+    if n <= 3
         # Calculate the coefficient polynomials using low-degree closed form
         # expressions
         C = low_degree_C(n, B, α)
