@@ -237,7 +237,16 @@ end
 # corresponding to individual degree terms of the polynomial approximation of
 # the layer's mass density.
 function V(layer::FiniteBodyLayer, evp::EvaluationPoint, δ)
-    sum(V_n(n, layer, evp, δ) for n = 0:layer.N)
+    # Create an empty array of length N
+    result = Vector{GravitationalPotential}(undef, layer.N + 1)
+
+    # Compute all the polynomial degrees in a parallel way, to reduce
+    # computation time on multicore systems
+    Threads.@threads for n = 0:layer.N
+        result[n + 1] = V_n(n, layer, evp, δ)
+    end
+
+    sum(result)
 end
 
 # Alias for the function V to be used by external code
