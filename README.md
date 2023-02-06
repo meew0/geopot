@@ -1,3 +1,5 @@
 # Calculation of a geopotential in spherical harmonics form from a mass distribution model of a general finite body
 
 At the moment, this repository mainly contains an implementation of the method described in [Fukushima, Toshio (2017): Precise and fast computation of gravitational field of general finite body and its application to gravitational study of asteroid Eros. Astron J 154:145](https://iopscience.iop.org/article/10.3847/1538-3881/aa88b8). In the future, I will extend this with an implementation of a spherical harmonics transform, to convert the resulting scalar potential field into spherical harmonics. I plan to use all of this to eventually generate geopotential models for the stock bodies in Kerbal Space Program, for use with the Principia mod, which by itself only provides geopotential models for Real Solar System bodies.
+
+A note about notation: this code follows the conventions for spherical coordinate systems from the above paper, unless noted otherwise. Thus, ϕ/Φ always refers to a latitude (*not* colatitude: -π/2 at the north pole, 0 at the equator, π/2 at the south pole), and λ/Λ always refers to a longitude (0 to 2π).
