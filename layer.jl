@@ -75,22 +75,22 @@ end
 # moments about the three Cartesian axis planes, then dividing those by the mass
 # to get the Cartesian coordinates of the centre of mass, and finally
 # transforming those into spherical coordinates.
-function layer_com(layer::FiniteBodyLayer)::EvaluationPoint
+function layer_com(layer::FiniteBodyLayer, maxevals = 1000)::EvaluationPoint
     # Lower and upper bounds of integration
     l, u = ((-π / 2, 0), (π / 2, 2π))
 
     # Calculate moments
     # Moment in xy plane: * -sin ϕ
     xy_moment_integrand = @moment_integrand -sin(ϕ)
-    M_xy, E = hcubature(x -> xy_moment_integrand(x), l, u)
+    M_xy, E = hcubature(x -> xy_moment_integrand(x), l, u, maxevals = maxevals)
 
     # Moment in xz plane: * cos ϕ sin λ
     xz_moment_integrand = @moment_integrand cos(ϕ) * sin(λ)
-    M_xz, E = hcubature(x -> xz_moment_integrand(x), l, u)
+    M_xz, E = hcubature(x -> xz_moment_integrand(x), l, u, maxevals = maxevals)
 
     # Moment in yz plane: * cos ϕ cos λ
     yz_moment_integrand = @moment_integrand cos(ϕ) * cos(λ)
-    M_yz, E = hcubature(x -> yz_moment_integrand(x), l, u)
+    M_yz, E = hcubature(x -> yz_moment_integrand(x), l, u, maxevals = maxevals)
 
     # Calculate mass and convert moments to coordinates
     M = layer_mass(layer)
