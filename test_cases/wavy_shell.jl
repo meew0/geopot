@@ -1,4 +1,4 @@
-# Test case of a wavy sphere with a cubic density distribution
+# Test case of a wavy spherical shell with a cubic density distribution
 include("../福島.jl")
 
 import PhysicalConstants.CODATA2018: G
