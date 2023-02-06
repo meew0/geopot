@@ -3,6 +3,8 @@
 include("types.jl")
 include("福島.jl")
 
+using Cuba
+
 # Calculate a layer's total mass as a volume integral of the density at each
 # point. The first integral of the density (along the radius) is calculated
 # analytically.
@@ -50,8 +52,9 @@ end
 # time.
 macro moment_integrand(ψ_expr)
     return quote
-        function(x)
-            ϕ, λ = x
+        function(x, v)
+            l, u = ((-π / 2, 0), (π / 2, 2π))
+            ϕ, λ = l .+ x .* (u .- l)
 
             # Antiderivative of the density along a radius (capital rho)
             Ρ(r) = sum(
@@ -63,7 +66,7 @@ macro moment_integrand(ψ_expr)
 
             top = layer.R_T(ϕ, λ)
             bottom = layer.R_B(ϕ, λ)
-            ustrip(
+            v[1] = 2π^2 * ustrip(
                 u"kg*m",
                 ψ * cos(ϕ) * (1 / 4) * (Ρ(top) * top^3 - Ρ(bottom) * bottom^3),
             )
@@ -82,19 +85,19 @@ function layer_com(layer::FiniteBodyLayer)::EvaluationPoint
     # Calculate moments
     # Moment in xy plane: * -sin ϕ
     xy_moment_integrand = @moment_integrand -sin(ϕ)
-    M_xy, E = hcubature(x -> xy_moment_integrand(x), l, u)
+    M_xy, E = cuhre(xy_moment_integrand)
 
     # Moment in xz plane: * cos ϕ sin λ
     xz_moment_integrand = @moment_integrand cos(ϕ) * sin(λ)
-    M_xz, E = hcubature(x -> xz_moment_integrand(x), l, u)
+    M_xz, E = cuhre(xz_moment_integrand)
 
     # Moment in yz plane: * cos ϕ cos λ
     yz_moment_integrand = @moment_integrand cos(ϕ) * cos(λ)
-    M_yz, E = hcubature(x -> yz_moment_integrand(x), l, u)
+    M_yz, E = cuhre(yz_moment_integrand)
 
     # Calculate mass and convert moments to coordinates
     M = layer_mass(layer)
-    x, y, z = (M_yz, M_xz, M_xy) .* u"kg*m" ./ M
+    x, y, z = (M_yz[1], M_xz[1], M_xy[1]) .* u"kg*m" ./ M
 
     # Convert Cartesian to polar coordinates
     R = hypot(x, y, z)
