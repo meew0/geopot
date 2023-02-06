@@ -186,6 +186,8 @@ function V_n(
     # at ϕ = Φ (⇔ ξ = 0). The integration method can tolerate this but only
     # at the boundary of the integration interval. So the integration must be
     # performed separately for the latitudes above and below Φ.
+    # (TODO: this was true when using the DE rule but it is probably no longer
+    # true with hcubature. So we might in fact be able to simplify this.)
     upper, E = hcubature(integrand, (-π / 2 - evp.Φ, 0), (0, 2π), rtol = δ)
     lower, E = hcubature(integrand, (0, 0), (π / 2 - evp.Φ, 2π), rtol = δ)
     I = upper + lower

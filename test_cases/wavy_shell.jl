@@ -1,5 +1,6 @@
 # Test case of a wavy spherical shell with a cubic density distribution
 include("../福島.jl")
+include("../layer.jl")
 
 import PhysicalConstants.CODATA2018: G
 import Unitful: @u_str, uconvert
@@ -55,6 +56,4 @@ calculate_and_time(layer, EvaluationPoint(3000.0u"km", 0, 0), δ)
 println("8000 km")
 calculate_and_time(layer, EvaluationPoint(8000.0u"km", 0, 0), δ)
 
-println("Centre of mass")
-@time println("Numerical radius: ", uconvert(u"km", layer_com(layer).R))
-
+@time println("Numerical radius of CoM: ", uconvert(u"km", layer_centre_of_mass(layer).R))

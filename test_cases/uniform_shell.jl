@@ -1,4 +1,4 @@
-# Compare the numerical to the analytical solution
+# Compare the numerical to the analytical solution for a uniform spherical shell
 include("../福島.jl")
 include("../layer.jl")
 
@@ -64,5 +64,5 @@ inner_volume = (4 / 3) * π * R_B^3
 println("Analytical: ", uconvert(u"m^3", outer_volume - inner_volume))
 
 println("Centre of mass")
-@time println("Numerical radius: ", uconvert(u"km", layer_com(layer).R))
-println("Analytical radius: ", 3 * R_0 / 8)
+@time println("Numerical radius: ", uconvert(u"km", layer_centre_of_mass(layer).R))
+println("Analytical radius: ", 0)

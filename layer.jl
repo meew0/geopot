@@ -43,7 +43,7 @@ function layer_volume(layer::FiniteBodyLayer)::Volume
     I * u"m^3"
 end
 
-# The moment integrand for centre of mass calculation (see next function)
+# The moment integrand for centre of mass calculation (see next function).
 # Implementing it as a macro like this, rather than as a function taking
 # coefficients for the trigonometric functions used to compute ψ, may not
 # be the most stylish solution but it significantly reduces compilation
@@ -75,7 +75,7 @@ end
 # moments about the three Cartesian axis planes, then dividing those by the mass
 # to get the Cartesian coordinates of the centre of mass, and finally
 # transforming those into spherical coordinates.
-function layer_com(layer::FiniteBodyLayer, maxevals = 1000)::EvaluationPoint
+function layer_centre_of_mass(layer::FiniteBodyLayer, maxevals = 1000)::EvaluationPoint
     # Lower and upper bounds of integration
     l, u = ((-π / 2, 0), (π / 2, 2π))
 
@@ -96,7 +96,7 @@ function layer_com(layer::FiniteBodyLayer, maxevals = 1000)::EvaluationPoint
     M = layer_mass(layer)
     x, y, z = (M_yz, M_xz, M_xy) .* u"kg*m" ./ M
 
-    # Convert Cartesian to polar coordinates
+    # Convert Cartesian to spherical coordinates
     R = hypot(x, y, z)
     Φ = asin(z / R)
     Λ = atan(y, x) # (atan2)

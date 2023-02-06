@@ -1,5 +1,5 @@
-# Compare the numerical to the analytical solution
-include("../福島.jl")
+# Compare numerical and analytical solutions of mass, volume, and
+# the radius of the centre of mass, for a hemisphere
 include("../layer.jl")
 
 import PhysicalConstants.CODATA2018: G
@@ -17,16 +17,13 @@ layer = FiniteBodyLayer(
     R_0
 )
 
-println("Mass")
-@time println("Numerical: ", uconvert(u"kg", layer_mass(layer)))
-analytical_mass = (2π / 3) * ρ * R_0^3
-println("Analytical: ", uconvert(u"kg", analytical_mass))
+analytical_volume = (2π / 3) * R_0^3
 
-println("Volume")
-@time println("Numerical: ", uconvert(u"m^3", layer_volume(layer)))
-volume = (2π / 3) * R_0^3
-println("Analytical: ", uconvert(u"m^3", volume))
+@time println("Numerical mass: ", uconvert(u"kg", layer_mass(layer)))
+println("Analytical mass: ", uconvert(u"kg", analytical_volume * ρ))
 
-println("Centre of mass")
-@time println("Numerical radius: ", uconvert(u"km", layer_com(layer).R))
-println("Analytical radius: ", 3 * R_0 / 8)
+@time println("Numerical volume: ", uconvert(u"m^3", layer_volume(layer)))
+println("Analytical volume: ", uconvert(u"m^3", analytical_volume))
+
+@time println("Numerical radius of CoM: ", uconvert(u"km", layer_centre_of_mass(layer).R))
+println("Analytical radius of CoM: ", 3 * R_0 / 8)
