@@ -43,42 +43,54 @@ function layer_volume(layer::FiniteBodyLayer)::Volume
     I * u"m^3"
 end
 
+# The moment integrand for centre of mass calculation (see next function)
+# Implementing it as a macro like this, rather than as a function taking
+# coefficients for the trigonometric functions used to compute ψ, may not
+# be the most stylish solution but it significantly reduces compilation
+# time.
+macro moment_integrand(ψ_expr)
+    return quote
+        function(x)
+            ϕ, λ = x
+
+            # Antiderivative of the density along a radius (capital rho)
+            Ρ(r) = sum(
+                (layer.ρ(n, ϕ, λ) * r^(n + 1) * layer.R_0^-n / (n + 1)) for
+                n = 0:layer.N
+            )
+
+            ψ = $ψ_expr
+
+            top = layer.R_T(ϕ, λ)
+            bottom = layer.R_B(ϕ, λ)
+            ustrip(
+                u"kg*m",
+                ψ * cos(ϕ) * (1 / 4) * (Ρ(top) * top^3 - Ρ(bottom) * bottom^3),
+            )
+        end
+    end
+end
+
 # Calculate the position of a layer's centre of mass by first calculating its
 # moments about the three Cartesian axis planes, then dividing those by the mass
 # to get the Cartesian coordinates of the centre of mass, and finally
 # transforming those into spherical coordinates.
 function layer_com(layer::FiniteBodyLayer)::EvaluationPoint
-    function moment_integrand(x, cos_ϕ_offset, cos_λ_offset, cos_λ_exponent)
-        ϕ, λ = x
-
-        # Antiderivative of the density along a radius (capital rho)
-        Ρ(r) = sum(
-            (layer.ρ(n, ϕ, λ) * r^(n + 1) * layer.R_0^-n / (n + 1)) for
-            n = 0:layer.N
-        )
-
-        ψ = cos(ϕ + cos_ϕ_offset) * cos(λ + cos_λ_offset)^cos_λ_exponent
-
-        top = layer.R_T(ϕ, λ)
-        bottom = layer.R_B(ϕ, λ)
-        ustrip(
-            u"kg*m",
-            ψ * cos(ϕ) * (1 / 3) * (Ρ(top) * top^3 - Ρ(bottom) * bottom^3),
-        )
-    end
-
     # Lower and upper bounds of integration
     l, u = ((-π / 2, 0), (π / 2, 2π))
 
     # Calculate moments
     # Moment in xy plane: * -sin ϕ
-    M_xy, E = hcubature(x -> moment_integrand(x, π / 2, 0, 0), l, u)
+    xy_moment_integrand = @moment_integrand -sin(ϕ)
+    M_xy, E = hcubature(x -> xy_moment_integrand(x), l, u)
 
     # Moment in xz plane: * cos ϕ sin λ
-    M_xz, E = hcubature(x -> moment_integrand(x, 0, -π / 2, 1), l, u)
+    xz_moment_integrand = @moment_integrand cos(ϕ) * sin(λ)
+    M_xz, E = hcubature(x -> xz_moment_integrand(x), l, u)
 
     # Moment in yz plane: * cos ϕ cos λ
-    M_yz, E = hcubature(x -> moment_integrand(x, 0, 0, 1), l, u)
+    yz_moment_integrand = @moment_integrand cos(ϕ) * cos(λ)
+    M_yz, E = hcubature(x -> yz_moment_integrand(x), l, u)
 
     # Calculate mass and convert moments to coordinates
     M = layer_mass(layer)
