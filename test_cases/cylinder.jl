@@ -69,5 +69,10 @@ compare_analytical_numerical(layer, EvaluationPoint(8000.0u"km", 0, 0), δ)
 @time println("Numerical mass: ", uconvert(u"kg", layer_mass(layer)))
 analytical_volume = 2π * d_cyl^3
 println("Analytical mass: ", uconvert(u"kg", ρ * analytical_volume))
+
 @time println("Numerical volume: ", uconvert(u"m^3", layer_volume(layer)))
 println("Analytical volume: ", uconvert(u"m^3", analytical_volume))
+
+println("Centre of mass")
+@time println("Numerical radius: ", uconvert(u"km", layer_com(layer).R))
+println("Analytical radius: ", 0u"km")

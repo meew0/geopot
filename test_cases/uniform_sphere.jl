@@ -62,3 +62,7 @@ println("Volume")
 outer_volume = (4 / 3) * π * R_T^3
 inner_volume = (4 / 3) * π * R_B^3
 println("Analytical: ", uconvert(u"m^3", outer_volume - inner_volume))
+
+println("Centre of mass")
+@time println("Numerical radius: ", uconvert(u"km", layer_com(layer).R))
+println("Analytical radius: ", 3 * R_0 / 8)

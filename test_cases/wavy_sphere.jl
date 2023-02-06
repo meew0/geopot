@@ -54,3 +54,7 @@ calculate_and_time(layer, EvaluationPoint(3000.0u"km", 0, 0), δ)
 
 println("8000 km")
 calculate_and_time(layer, EvaluationPoint(8000.0u"km", 0, 0), δ)
+
+println("Centre of mass")
+@time println("Numerical radius: ", uconvert(u"km", layer_com(layer).R))
+
