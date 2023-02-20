@@ -1,7 +1,9 @@
 # Utility functions for working with finite body layers
 
 include("types.jl")
-include("福島.jl")
+
+using HCubature
+import Unitful: @u_str, ustrip
 
 # Calculate a layer's total mass as a volume integral of the density at each
 # point. The first integral of the density (along the radius) is calculated
@@ -82,15 +84,15 @@ function layer_centre_of_mass(layer::FiniteBodyLayer, maxevals = 1000)::Evaluati
     # Calculate moments
     # Moment in xy plane: * -sin ϕ
     xy_moment_integrand = @moment_integrand -sin(ϕ)
-    M_xy, E = hcubature(x -> xy_moment_integrand(x), l, u, maxevals = maxevals)
+    M_xy, E = hcubature(xy_moment_integrand, l, u, maxevals = maxevals)
 
     # Moment in xz plane: * cos ϕ sin λ
     xz_moment_integrand = @moment_integrand cos(ϕ) * sin(λ)
-    M_xz, E = hcubature(x -> xz_moment_integrand(x), l, u, maxevals = maxevals)
+    M_xz, E = hcubature(xz_moment_integrand, l, u, maxevals = maxevals)
 
     # Moment in yz plane: * cos ϕ cos λ
     yz_moment_integrand = @moment_integrand cos(ϕ) * cos(λ)
-    M_yz, E = hcubature(x -> yz_moment_integrand(x), l, u, maxevals = maxevals)
+    M_yz, E = hcubature(yz_moment_integrand, l, u, maxevals = maxevals)
 
     # Calculate mass and convert moments to coordinates
     M = layer_mass(layer)
@@ -102,8 +104,4 @@ function layer_centre_of_mass(layer::FiniteBodyLayer, maxevals = 1000)::Evaluati
     Λ = atan(y, x) # (atan2)
 
     EvaluationPoint(R, Φ, Λ)
-end
-
-function gravitational_potential(layer::FiniteBodyLayer)::GravitationalPotential
-    error("NYI")
 end
