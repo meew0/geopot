@@ -12,16 +12,20 @@ function layer_mass(layer::FiniteBodyLayer)::Mass
     function area_density(x)
         ϕ, λ = x
 
+        # Strip the unit from R_0 once at the beginning for improved integrand
+        # calculation performance
+        R_0_m = ustrip(u"m", layer.R_0)
+
         # Antiderivative of the density along a radius (capital rho)
         Ρ(r) = sum(
-            (layer.ρ(n, ϕ, λ) * r^(n + 1) * layer.R_0^-n / (n + 1)) for
+            (layer.ρ(n, ϕ, λ) * r^(n + 1) * R_0_m^-n / (n + 1)) for
             n = 0:layer.N
         )
 
-        top = layer.R_T(ϕ, λ)
-        bottom = layer.R_B(ϕ, λ)
+        top = ustrip(u"m", layer.R_T(ϕ, λ))
+        bottom = ustrip(u"m", layer.R_B(ϕ, λ))
         ustrip(
-            u"kg",
+            u"kg*m^-3",
             cos(ϕ) * (1 / 3) * (Ρ(top) * top^2 - Ρ(bottom) * bottom^2),
         )
     end
@@ -55,18 +59,22 @@ macro moment_integrand(ψ_expr)
         function(x)
             ϕ, λ = x
 
+            # Strip the unit from R_0 once at the beginning for improved
+            # integrand calculation performance
+            R_0_m = ustrip(u"m", layer.R_0)
+
             # Antiderivative of the density along a radius (capital rho)
             Ρ(r) = sum(
-                (layer.ρ(n, ϕ, λ) * r^(n + 1) * layer.R_0^-n / (n + 1)) for
+                (layer.ρ(n, ϕ, λ) * r^(n + 1) * R_0_m^-n / (n + 1)) for
                 n = 0:layer.N
             )
 
             ψ = $ψ_expr
 
-            top = layer.R_T(ϕ, λ)
-            bottom = layer.R_B(ϕ, λ)
+            top = ustrip(u"m", layer.R_T(ϕ, λ))
+            bottom = ustrip(u"m", layer.R_B(ϕ, λ))
             ustrip(
-                u"kg*m",
+                u"kg*m^-3",
                 ψ * cos(ϕ) * (1 / 4) * (Ρ(top) * top^3 - Ρ(bottom) * bottom^3),
             )
         end
